@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,20 +8,20 @@ import 'package:weather/provider/api_provider/provider.dart';
 import 'package:weather/utils/responsive.dart';
 
 class Home extends ConsumerWidget {
-  Home({super.key});
+  const Home({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Icon cusicon = Icon(
-      Icons.search,
-      size: R.width(28, context),
-    );
     /*  */
     // log("${DateFormat("yyyy-MM-dd").format(DateTime.now())}");
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: PreferredSize(
-            preferredSize: Size.fromHeight(100),
-            child: ref.watch(getCurrentWeatherDatasProvider).when(
+            preferredSize: const Size.fromHeight(100),
+            child: ref
+                .watch(getCurrentWeatherDatasProvider(
+                    ref.watch(searchControllerProvider).text))
+                .when(
                   data: (data) {
                     Widget custitle = Column(
                       children: [
@@ -55,18 +57,59 @@ class Home extends ConsumerWidget {
                             width: R.width(20, context),
                           ),
                           actions: [
-                            IconButton(onPressed: () {}, icon: cusicon)
+                            IconButton(
+                                onPressed: () {
+                                  ref.read(issearchProvider.notifier).state =
+                                      !ref
+                                          .read(issearchProvider.notifier)
+                                          .state;
+                                },
+                                icon: Icon(
+                                  ref.watch(issearchProvider)
+                                      ? CupertinoIcons.clear_circled
+                                      : CupertinoIcons.search,
+                                  size: R.width(28, context),
+                                ))
                           ],
                           centerTitle: true,
-                          title: custitle),
+                          title: ref.watch(issearchProvider)
+                              ? Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: TextField(
+                                    onSubmitted: (value) {
+                                      log("abc");
+                                      ref
+                                              .read(issearchProvider.notifier)
+                                              .state =
+                                          !ref
+                                              .read(issearchProvider.notifier)
+                                              .state;
+                                    },
+                                    controller:
+                                        ref.watch(searchControllerProvider),
+                                    decoration: InputDecoration(
+                                        filled: true,
+                                        fillColor: Colors.white54,
+                                        border: OutlineInputBorder(
+                                            borderSide: BorderSide.none,
+                                            borderRadius: BorderRadius.circular(
+                                                R.height(30, context))),
+                                        prefixIcon: const Icon(Icons.search),
+                                        hintText: "Search Locations"),
+                                  ),
+                                )
+                              : custitle),
                     );
                   },
                   error: (error, stackTrace) => Text(error.toString()),
-                  loading: () => Center(
+                  loading: () => const Center(
                     child: CircularProgressIndicator(),
                   ),
                 )),
-        body: ref.watch(getCurrentWeatherDatasProvider).when(
+        body: ref
+            .watch(getCurrentWeatherDatasProvider(
+                ref.watch(searchControllerProvider).text))
+            .when(
           data: (data) {
             return SingleChildScrollView(
               child: Container(
@@ -84,47 +127,7 @@ class Home extends ConsumerWidget {
                     children: [
                       SizedBox(
                         height: R.width(20, context),
-                      )
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      //   children: [
-                      //     IconButton(
-                      //       onPressed: () {},
-                      //       icon: const Icon(Icons.add),
-                      //       iconSize: R.width(30, context),
-                      //       color: Colors.white,
-                      //     ),
-                      //     Column(
-                      //       children: [
-                      //         Text(
-                      //           data!.location.name,
-                      //           style: TextStyle(
-                      //               fontSize: R.width(20, context),
-                      //               color: Colors.white),
-                      //         ),
-                      //         Row(
-                      //           children: [
-                      //             Text(
-                      //               data.location.region,
-                      //               style: const TextStyle(color: Colors.white),
-                      //             ),
-                      //             Text(
-                      //               data.location.country,
-                      //               style: const TextStyle(color: Colors.white),
-                      //             )
-                      //           ],
-                      //         )
-                      //       ],
-                      //     ),
-                      //     IconButton(
-                      //       onPressed: () {},
-                      //       icon: const Icon(Icons.more_vert),
-                      //       iconSize: R.width(25, context),
-                      //       color: Colors.white,
-                      //     )
-                      //   ],
-                      // ),
-                      ,
+                      ),
                       SizedBox(
                         height: R.width(30, context),
                       ),
@@ -254,14 +257,6 @@ class Home extends ConsumerWidget {
                                                 fontSize: R.width(18, context)),
                                           ),
                                           const Icon(Icons.error)
-                                          // Image.network(
-                                          //     "https:${data!.forecast.forecastday[0].day.condition.icon}"),
-                                          // Text(
-                                          //   "${data.forecast.forecastday[0].hour[0].tempF}ºf",
-                                          //   style: TextStyle(
-                                          //       color: Colors.white,
-                                          //       fontSize: R.width(18, context)),
-                                          // )
                                         ],
                                       );
                                     }
@@ -276,7 +271,7 @@ class Home extends ConsumerWidget {
                                               fontSize: R.width(18, context)),
                                         ),
                                         Image.network(
-                                            "https:${data!.forecast.forecastday[0].day.condition.icon}"),
+                                            "https:${data.forecast.forecastday[0].day.condition.icon}"),
                                         Text(
                                           "${data.forecast.forecastday[0].hour[0].tempF}ºf",
                                           style: TextStyle(
@@ -292,62 +287,7 @@ class Home extends ConsumerWidget {
                                   loading: () => const Center(
                                     child: CircularProgressIndicator(),
                                   ),
-                                )
-
-                          // Column(
-                          //   children: [
-                          //     Text(
-                          //       "Wed",
-                          //       style: TextStyle(
-                          //           color: Colors.white,
-                          //           fontSize: R.width(18, context)),
-                          //     ),
-                          //     Image.network(
-                          //         "https://cdn.weatherapi.com/weather/64x64/day/116.png"),
-                          //     Text(
-                          //       "84.4ºf",
-                          //       style: TextStyle(
-                          //           color: Colors.white,
-                          //           fontSize: R.width(18, context)),
-                          //     ),
-                          //   ],
-                          // ),
-                          // Column(
-                          //   children: [
-                          //     Text(
-                          //       "Wed",
-                          //       style: TextStyle(
-                          //           color: Colors.white,
-                          //           fontSize: R.width(18, context)),
-                          //     ),
-                          //     Image.network(
-                          //         "https://cdn.weatherapi.com/weather/64x64/day/113.png"),
-                          //     Text(
-                          //       "84.4ºf",
-                          //       style: TextStyle(
-                          //           color: Colors.white,
-                          //           fontSize: R.width(18, context)),
-                          //     )
-                          //   ],
-                          // ),
-                          // Column(
-                          //   children: [
-                          //     Text(
-                          //       "Wed",
-                          //       style: TextStyle(
-                          //           color: Colors.white,
-                          //           fontSize: R.width(18, context)),
-                          //     ),
-                          //     Image.network(
-                          //         "https://cdn.weatherapi.com/weather/64x64/day/116.png"),
-                          //     Text(
-                          //       "84.4ºf",
-                          //       style: TextStyle(
-                          //           color: Colors.white,
-                          //           fontSize: R.width(18, context)),
-                          //     )
-                          //   ],
-                          // ),
+                                ),
                         ],
                       ),
                       SizedBox(
